@@ -9,6 +9,9 @@
     Mandatory [string] URI identifying the SCConfigMgr WebService.
 .PARAMETER SecretKey
     Mandatory [string] Secret key necessary for accessing the WebService.
+.PARAMTER Manufacturer
+    Mandatory [string[]] Manufacturer(s) Dell, HP, Lenovo, etc whose computer models should be
+    included in the output.
 .PARAMETER PilotDrivers
     Optional [switch] If included the pilot drivers will be retrieved in place of the production
     drivers.  It's doubtful this will ever be used, but better to have it and not need it, right?
@@ -20,6 +23,12 @@
 .OUTPUTS
     None
 .NOTES
+    VERSION 1.2.0
+        Creation Date: 2019-11-07
+        Author: John Trask
+        Purpose/Change(s):
+            Added PARAMETER Manufacturer.  This will eliminate the need to edit the script if 
+            an additional MDM-Supported manufacturer is added.
     VERSION 1.1.0
         Creation Date: 2019-09-30
         Author: John Trask
@@ -53,6 +62,9 @@ Param (
     [string]$SecretKey,
 
     [Parameter(Mandatory=$True)]
+    [string[]] $Manufacturer,
+
+    [Parameter(Mandatory=$True)]
     [string]$Destination,
     
     [Parameter(Mandatory=$False)]
@@ -63,8 +75,7 @@ $Web = New-WebServiceProxy -Uri $URI
 
 If ($PilotDrivers) {
     $Filter = 'Drivers Pilot - %'
-}
-Else {
+} Else {
     $Filter = 'Drivers - %'
 } 
 
@@ -73,8 +84,9 @@ $PackageNames = ($Web.GetCMPackage($SecretKey,$Filter)).PackageName
 [system.Collections.ArrayList]$Models = @()
 ForEach ($PackageName in $PackageNames) {
     $Model = ($PackageName -split ' - ')[1]
-    $Model = $Model.Replace('Dell ','')
-    $Model = $Model.Replace('Hewlett-Packard ','')
+    ForEach($Mfg in $Manufacturer) {
+        $Model = $Model.Replace("$Mfg ",'')
+    }
     $Models.Add($Model) | Out-Null
 }
 
